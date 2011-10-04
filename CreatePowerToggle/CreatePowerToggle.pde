@@ -19,6 +19,7 @@ void loop()
           delay(500);
           digitalWrite(powerPin, HIGH);
           delay(500);
+          digitalWrite(powerPin, LOW);
     }
   }  
 }
