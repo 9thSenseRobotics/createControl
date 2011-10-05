@@ -60,6 +60,7 @@
 #define DEFAULT_BACKWARD_SPEED -.300
 #define DEFAULT_TURN_SPEED 3.
 
+#define ARDUINO_FILENAME "/dev/ttyACM0"
 
 #define RAMPUP_SPEED_DELAY 200.  // controls how long between speed steps when ramping up from a stop to default speed
 #define MIN_TURN_TIME 100.
@@ -92,6 +93,7 @@ private:
   void moveForward();
   void moveBackward();
   void turn();
+  void togglePower();
   void delay(float delayMsec);
 
   int linear_, angular_, deadman_axis_;
@@ -225,12 +227,27 @@ void TelebotSkypeCmd::skypeCallback( const std_msgs::String& msgSkype)
         turn();
         break;
       
+      case 'p':    // toggle power
+      case 'P':    // toggle power
+        ReceivedCommands.data = "command issued to toggle Create power";
+        cmd_pub_.publish(ReceivedCommands);
+        togglePower();
+        break;
+        
       default:  // unknown command
         //stop();  w// we need to ignore, not stop because otherwise we will stop when people are just saying stuff like "hi"
         break;
     }
 }
 
+void TelebotSkypeCmd::togglePower()
+{
+	FILE * fp;
+	
+	fp = fopen (ARDUINO_FILENAME, "w");
+	fputc ('y', fp);
+	fclose (fp);
+}
 
 void TelebotSkypeCmd::moveForward()
 {
