@@ -4,7 +4,7 @@
   <param name="lower_camera" value="/dev/video1"/>
  
   <!--include file="$(find turtlebot_bringup)/driver.launch"  /-->
-  <!-- this just launched the turtlebot_node, as below /-->
+  <!-- this just launches the turtlebot_node, as below /-->
 
   <node pkg="turtlebot_node" type="turtlebot_node.py" name="turtlebot_node" output="screen" respawn="true" args="--respawnable">
     <param name="bonus" value="false" />
