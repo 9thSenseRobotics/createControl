@@ -1,7 +1,7 @@
 <launch>
 
-  <param name="pan_tilt_camera" value="/dev/video2"/>
-  <param name="lower_camera" value="/dev/video1"/>
+  <param name="pan_tilt_camera" value="/dev/primarycam"/>
+  <param name="lower_camera" value="/dev/navcam"/>
  
   <!--include file="$(find turtlebot_bringup)/driver.launch"  /-->
   <!-- this just launches the turtlebot_node, as below /-->
@@ -26,6 +26,12 @@
   </node>
   
   <node pkg="createControl" type="createControl" name="createControl" >
+  </node>
+  
+  <node pkg="cameraControl" type="cameraControl" name="cameraControl">
+  </node>
+  
+  node pkg="captureSkypeChat" type="captureSkypeChat" name="captureSkypeChat">
   </node>
   
 </launch>

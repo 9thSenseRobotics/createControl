@@ -102,14 +102,11 @@ private:
   std_msgs::String ReceivedCommands;
   ros::Publisher vel_pub_, cmd_pub_;
   ros::Subscriber skypechat_sub;
-  //ros::Subscriber joy_sub_;
-
 
   geometry_msgs::Twist vel, last_published_;
   boost::mutex publish_mutex_;
   bool deadman_pressed_;
   ros::Timer timer_;
-
 };
 
 TelebotSkypeCmd::TelebotSkypeCmd():
@@ -141,18 +138,14 @@ void TelebotSkypeCmd::skypeCallback( const std_msgs::String& msgSkype)
     cmd_pub_.publish(ReceivedCommands);
     ROS_INFO("%s", ReceivedCommands.data.c_str());
     numSteps = strlen( (const char* ) ReceivedCommands.data.c_str());
-    if ( numSteps > 5 ) return;  // invalid format, more than 4 characters
+    if ( numSteps > 10 ) numSteps = 2;  // might be mistake in held down key
+    else if (numSteps > 5) numSteps = 5;  // if you just hit a few extra keys, go max
     for (int i = 1; i < numSteps; i++) if ( (msgSkype.data[i] != msgSkype.data[0]) && msgSkype.data[i] != msgSkype.data[0] + 32) return; 
           // if string is not all identical characters, allowing for first character to be a capital, return    
     char cmd = msgSkype.data[0]; 
     switch(cmd)
     {
       case 'z':    // stop
-        ReceivedCommands.data = "command issued to slowly stop";
-        cmd_pub_.publish(ReceivedCommands);
-        slowStop();
-        break;
-        
       case 'Z':    // stop
         ReceivedCommands.data = "command issued to slowly stop";
         cmd_pub_.publish(ReceivedCommands);
@@ -160,11 +153,6 @@ void TelebotSkypeCmd::skypeCallback( const std_msgs::String& msgSkype)
         break;
         
       case 'x':    // stop
-        stop();
-        ReceivedCommands.data = "command issued to stop";
-        cmd_pub_.publish(ReceivedCommands);
-        break;
-        
       case 'X':    // stop
         stop();
         ReceivedCommands.data = "command issued to stop";
@@ -172,12 +160,6 @@ void TelebotSkypeCmd::skypeCallback( const std_msgs::String& msgSkype)
         break;
       
       case 'w':  // move forward
-        ReceivedCommands.data = "command issued to move forward";
-        cmd_pub_.publish(ReceivedCommands);
-        driving = DRIVING_FORWARD;
-        moveForward();
-        break;
-        
       case 'W':  // move forward
         ReceivedCommands.data = "command issued to move forward";
         cmd_pub_.publish(ReceivedCommands);
@@ -186,12 +168,6 @@ void TelebotSkypeCmd::skypeCallback( const std_msgs::String& msgSkype)
         break;
         
       case 's':  //move backward
-        ReceivedCommands.data = "command issued to move backward";
-        cmd_pub_.publish(ReceivedCommands);
-        driving = DRIVING_BACKWARD;
-        moveBackward();
-        break;
-        
       case 'S':  //move backward
         ReceivedCommands.data = "command issued to move backward";
         cmd_pub_.publish(ReceivedCommands);
@@ -200,27 +176,15 @@ void TelebotSkypeCmd::skypeCallback( const std_msgs::String& msgSkype)
         break;
         
       case 'd':  //turn right
+      case 'D':
         driving = DRIVING_TURNRIGHT;
         ReceivedCommands.data = "command issued to turn right";
         cmd_pub_.publish(ReceivedCommands);
         turn();
         break;
-        
-      case 'D':  //turn right
-        driving = DRIVING_TURNRIGHT;
-        ReceivedCommands.data = "command issued to turn right";
-        cmd_pub_.publish(ReceivedCommands);
-        turn();
-        break;
-        
+         
       case 'a':  // turn left
-        driving = DRIVING_TURNLEFT;
-        ReceivedCommands.data = "command issued to turn left";
-        cmd_pub_.publish(ReceivedCommands);
-        turn();
-        break;
-        
-      case 'A':  // turn left
+      case 'A':
         driving = DRIVING_TURNLEFT;
         ReceivedCommands.data = "command issued to turn left";
         cmd_pub_.publish(ReceivedCommands);
@@ -242,8 +206,7 @@ void TelebotSkypeCmd::skypeCallback( const std_msgs::String& msgSkype)
 
 void TelebotSkypeCmd::togglePower()
 {
-	FILE * fp;
-	
+	FILE * fp;	
 	fp = fopen (ARDUINO_FILENAME, "w");
 	fputc ('y', fp);
 	fclose (fp);
@@ -388,6 +351,5 @@ int main(int argc, char** argv)
 {
   ros::init(argc, argv, "createControl");
   TelebotSkypeCmd createControl;
-
   ros::spin();
 }
