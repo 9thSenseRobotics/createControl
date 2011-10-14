@@ -27,11 +27,5 @@
   
   <node pkg="createControl" type="createControl" name="createControl" >
   </node>
-  
-  <node pkg="cameraControl" type="cameraControl" name="cameraControl">
-  </node>
-  
-  node pkg="captureSkypeChat" type="captureSkypeChat" name="captureSkypeChat">
-  </node>
-  
+   
 </launch>
