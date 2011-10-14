@@ -67,7 +67,7 @@
 #define MIN_MOVE_TIME 500.
 #define TIME_OUT 8000.  // number of milliseconds to wait for command before you consider it a timeout and stop the base
 #define TURN_OFF_CREATE 900000.  // number of milliseconds of inactivity before powering down create to save battery power (15 min = 900 seconds = 900000 msec)
-
+#define TURTLEBOT_NODE_PREVENT_TIMEOUT 500	// for some reason, the timeout gets set as 1 second in turtlebot_node regardless of the input parameter, so we need to publish frequently to prevent the timeout
 
 #include <ros/ros.h>
 #include <geometry_msgs/Twist.h>
@@ -128,8 +128,9 @@ TelebotSkypeCmd::TelebotSkypeCmd():
   vel_pub_ = nh_.advertise<geometry_msgs::Twist>("turtlebot_node/cmd_vel", 1);
   cmd_pub_ = nh_.advertise<std_msgs::String>("robot_commands", 1);
   skypechat_sub = nh_.subscribe("SkypeChat", 10, &TelebotSkypeCmd::skypeCallback, this);
-  timer_ = nh_.createTimer(ros::Duration(4.0), boost::bind(&TelebotSkypeCmd::publish, this));  // publish once per second, just to 
-  				// keep the turtlebot node from timing out (it has a 5 second timeout right now)
+ // timer_ = nh_.createTimer(ros::Duration(TURTLEBOT_NODE_PREVENT_TIMEOUT/1000.), boost::bind(&TelebotSkypeCmd::publish, this));  // publish to keep the turtlebot node from timing out (it has a 1 second timeout right now)
+  // but this does not go when we do ros.sleep, so when sleeping we have to have another method
+// so we don't bother with this at all.
 }
 
 void TelebotSkypeCmd::skypeCallback( const std_msgs::String& msgSkype)
@@ -220,26 +221,27 @@ void TelebotSkypeCmd::moveForward()
   	vel.linear.x = DEFAULT_FORWARD_SPEED;
   	publish();
     delay(MIN_MOVE_TIME);
-    stop();
+    slowStop();
   }
   else  // use ramp up and ramp down
   {
-    vel.linear.x = DEFAULT_FORWARD_SPEED;
-  	publish();
     vel.linear.x = MIN_FORWARD_SPEED;
-    while (vel.linear.x < DEFAULT_FORWARD_SPEED)  // ramp up to speed from a stop
+    while (vel.linear.x <= DEFAULT_FORWARD_SPEED)  // ramp up to speed from a stop
     {
-        vel.linear.x += DELTA_FORWARD_SPEED;
-  	    publish();
-        delay(RAMPUP_SPEED_DELAY);
+         publish();
+         delay(RAMPUP_SPEED_DELAY);
+         vel.linear.x += DELTA_FORWARD_SPEED;
     }
     for (int i = 1; i < numSteps; i++)
     {
-      vel.linear.x += DELTA_FORWARD_SPEED;
-      if (vel.linear.x <= MAX_FORWARD_SPEED) publish();
+      if (vel.linear.x + DELTA_FORWARD_SPEED <= MAX_FORWARD_SPEED)
+      {
+      	vel.linear.x += DELTA_FORWARD_SPEED;
+        publish();
+      }
       delay(RAMPUP_SPEED_DELAY);
-    }
-    delay(MIN_MOVE_TIME * ( (3 * numSteps) - 6 ));  // numSteps here can range from 2 to 5, so we can get 0, 3MMT, 6MMT, and 9MMT 
+    } 
+    delay(MIN_MOVE_TIME * ( (3 * numSteps) - 6 ));  // numSteps here can range from 2 to 5, so we can get 0, 3MMT, 6MMT, and 9MMT    
     slowStop();
   }
 }
@@ -252,24 +254,22 @@ void TelebotSkypeCmd::moveBackward()
     vel.linear.x = DEFAULT_BACKWARD_SPEED;
   	publish();
     delay(MIN_MOVE_TIME);
-    stop();
+    slowStop();
   }
   else
   {
     vel.linear.x = MIN_BACKWARD_SPEED;
-    publish();
-    vel.linear.x = MIN_BACKWARD_SPEED;
-    while (vel.linear.x > DEFAULT_BACKWARD_SPEED)  // ramp up to speed from a stop, note that these are negative numbers
+    while (vel.linear.x >= DEFAULT_BACKWARD_SPEED)  // ramp up to speed from a stop, note that these are negative numbers
     {
-        vel.linear.x += DELTA_BACKWARD_SPEED;
         publish();
         delay(RAMPUP_SPEED_DELAY);
+        vel.linear.x += DELTA_BACKWARD_SPEED;
     }
     for (int i = 1; i < numSteps; i++)
     {
-      vel.linear.x += DELTA_BACKWARD_SPEED;
       if (vel.linear.x >= MAX_BACKWARD_SPEED) publish();
       delay(RAMPUP_SPEED_DELAY);
+      vel.linear.x += DELTA_BACKWARD_SPEED;
     }
     delay(MIN_MOVE_TIME * ( (3 * numSteps) - 6 ));  // numSteps here can range from 2 to 5, so we can get 0, 3MMT, 6MMT, and 9MMT 
     if (numSteps > 3) delay(1000);  // for longer runs, add some extra time
@@ -283,9 +283,10 @@ void TelebotSkypeCmd::turn()
   if (driving == DRIVING_TURNRIGHT) vel.angular.z = -DEFAULT_TURN_SPEED;
   else vel.angular.z = DEFAULT_TURN_SPEED;
   publish();
-  delay(MIN_TURN_TIME * numSteps);  // numSteps here can range from 1 to 5, so we can get 1, 3MMT, 9MMT, 13MMT, and 17MT numSteps);
+  delay(MIN_TURN_TIME * numSteps);
   if (numSteps > 3) delay(500);  // for longer runs, add some extra time
-  stop();
+  if (numSteps == 1) stop();
+  else slowStop();
  }
 
 
@@ -294,18 +295,25 @@ void TelebotSkypeCmd::slowStop()
   if (driving < 3) // not turning
   {
     vel.angular.z = 0;
-    while (vel.linear.x > MIN_FORWARD_SPEED) 
+    if (driving == DRIVING_FORWARD)
     {
-        vel.linear.x -= DELTA_FORWARD_SPEED;
-        publish();
-        delay(RAMPUP_SPEED_DELAY);
+		while (vel.linear.x > MIN_FORWARD_SPEED) 
+		{
+		    vel.linear.x -= DELTA_FORWARD_SPEED;
+		    publish();
+		    delay(RAMPUP_SPEED_DELAY);
+		}
+	}
+	else
+	{
+		while (vel.linear.x < MIN_BACKWARD_SPEED)  // negative numbers here
+		{
+		    vel.linear.x -= DELTA_BACKWARD_SPEED;
+		    publish();
+		    delay(RAMPUP_SPEED_DELAY);
+		}
     }
-    while (vel.linear.x < MIN_BACKWARD_SPEED)  // negative numbers here
-    {
-        vel.linear.x -= DELTA_BACKWARD_SPEED;
-        publish();
-        delay(RAMPUP_SPEED_DELAY);
-    }
+
   }
   else  // turning
   {
@@ -314,8 +322,8 @@ void TelebotSkypeCmd::slowStop()
     while (absTurnSpeed > MIN_TURN_SPEED)
     {
       absTurnSpeed -= DELTA_TURN_SPEED;
-      if (driving == DRIVING_TURNRIGHT) vel.angular.z = absTurnSpeed; 
-      else vel.angular.z = -absTurnSpeed; 
+      if (driving == DRIVING_TURNRIGHT) vel.angular.z = -absTurnSpeed; 
+      else vel.angular.z = absTurnSpeed; 
       publish();
       delay(RAMPUP_SPEED_DELAY);
     }
@@ -334,7 +342,14 @@ void TelebotSkypeCmd::stop()
 
 void TelebotSkypeCmd::delay(float delayMsec)
 {
-	ros::Duration(delayMsec/1000.).sleep(); 
+	while (delayMsec > TURTLEBOT_NODE_PREVENT_TIMEOUT)
+	{
+		 ros::Duration(TURTLEBOT_NODE_PREVENT_TIMEOUT/1000.).sleep(); 
+		 delayMsec -= TURTLEBOT_NODE_PREVENT_TIMEOUT;
+		 publish();
+	}
+	ros::Duration(delayMsec/1000.).sleep();
+	publish(); 		
 }
 
 void TelebotSkypeCmd::publish()

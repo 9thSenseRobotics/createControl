@@ -2,27 +2,11 @@
 
   <param name="pan_tilt_camera" value="/dev/primarycam"/>
   <param name="lower_camera" value="/dev/navcam"/>
- 
-  <!--include file="$(find turtlebot_bringup)/driver.launch"  /-->
-  <!-- this just launches the turtlebot_node, as below /-->
 
   <node pkg="turtlebot_node" type="turtlebot_node.py" name="turtlebot_node" output="screen" respawn="true" args="--respawnable">
     <param name="bonus" value="false" />
     <param name="update_rate" value="30.0" />
-    <param name="cmd_vel_timeout" value="5.0" />
-  </node>
-  
-  <include file="$(find turtlebot_bringup)/params.launch" />
-  <include file="$(find turtlebot_bringup)/app_manager.launch" />
-
-
-  <!-- Turtlebot Laptop Battery Diagnostics -->
-  <node pkg="turtlebot_node" type="laptop_battery.py" name="turtlebot_laptop_battery">
-  </node>
-  
-  <node pkg="robot_state_publisher" type="state_publisher" name="robot_state_publisher" output="screen">
-    <param name="publish_frequency" type="double" value="30.0" />
-    <!--param name="tf_prefix" type="string" value="" /-->
+    <param name="turtlebot_node/cmd_vel_timeout" value="5.0" />
   </node>
   
   <node pkg="createControl" type="createControl" name="createControl" >
