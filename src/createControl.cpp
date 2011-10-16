@@ -209,7 +209,7 @@ void TelebotSkypeCmd::togglePower()
 {
 	FILE * fp;	
 	fp = fopen (ARDUINO_FILENAME, "w");
-	fputc ('y', fp);
+	fputc ('p', fp);
 	fclose (fp);
 }
 
