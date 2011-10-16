@@ -1,7 +1,7 @@
 <launch>
 
-  <param name="pan_tilt_camera" value="/dev/primarycam"/>
-  <param name="lower_camera" value="/dev/navcam"/>
+  <param name="pan_tilt_camera" value="/dev/pricamera"/>
+  <param name="lower_camera" value="/dev/navcamera"/>
 
   <node pkg="turtlebot_node" type="turtlebot_node.py" name="turtlebot_node" output="screen" respawn="true" args="--respawnable">
     <param name="bonus" value="false" />
