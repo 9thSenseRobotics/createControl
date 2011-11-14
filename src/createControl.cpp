@@ -92,6 +92,7 @@ private:
   void slowStop();
   void moveForward();
   void moveForwardUntilToldToStop();
+  void moveBackwardUntilToldToStop();
   void moveBackward();
   void turn();
   void togglePower();
@@ -168,8 +169,8 @@ void TelebotSkypeCmd::skypeCallback( const std_msgs::String& msgSkype)
         driving = DRIVING_FORWARD;
         moveForward();
         break;
-	  case 'f':  // move forward
-      case 'F':  // move forward
+	  case 'f':  // move forward until told to stop
+      case 'F':  // move forward until told to stop
         ReceivedCommands.data = "command issued to move forward until told to stop";
         cmd_pub_.publish(ReceivedCommands);
         driving = DRIVING_FORWARD;
@@ -182,7 +183,13 @@ void TelebotSkypeCmd::skypeCallback( const std_msgs::String& msgSkype)
         driving = DRIVING_BACKWARD;
         moveBackward();
         break;
-        
+	  case 'c':  // move backward until told to stop
+      case 'C':  // move backward until told to stop
+        ReceivedCommands.data = "command issued to move backward until told to stop";
+        cmd_pub_.publish(ReceivedCommands);
+        driving = DRIVING_FORWARD;
+        moveBackwardUntilToldToStop();
+        break;        
       case 'd':  //turn right
       case 'D':
         driving = DRIVING_TURNRIGHT;
@@ -207,7 +214,7 @@ void TelebotSkypeCmd::skypeCallback( const std_msgs::String& msgSkype)
         break;
         
       default:  // unknown command
-        //stop();  w// we need to ignore, not stop because otherwise we will stop when people are just saying stuff like "hi"
+        //stop();  // we need to ignore, not stop because otherwise we will stop when people are just saying stuff like "hi"
         break;
     }
 }
@@ -291,6 +298,14 @@ void TelebotSkypeCmd::moveBackward()
     slowStop();
   }
 }
+
+void TelebotSkypeCmd::moveBackwardUntilToldToStop()
+{
+  vel.angular.z = 0;    
+  	vel.linear.x = DEFAULT_BACKWARD_SPEED;
+  	publish();
+}
+
 
 void TelebotSkypeCmd::turn()
 {
