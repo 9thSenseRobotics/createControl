@@ -91,6 +91,7 @@ private:
   void stop();
   void slowStop();
   void moveForward();
+  void moveForwardUntilToldToStop();
   void moveBackward();
   void turn();
   void togglePower();
@@ -167,7 +168,13 @@ void TelebotSkypeCmd::skypeCallback( const std_msgs::String& msgSkype)
         driving = DRIVING_FORWARD;
         moveForward();
         break;
-        
+	  case 'f':  // move forward
+      case 'F':  // move forward
+        ReceivedCommands.data = "command issued to move forward until told to stop";
+        cmd_pub_.publish(ReceivedCommands);
+        driving = DRIVING_FORWARD;
+        moveForwardUntilToldToStop();
+        break;        
       case 's':  //move backward
       case 'S':  //move backward
         ReceivedCommands.data = "command issued to move backward";
@@ -245,6 +252,14 @@ void TelebotSkypeCmd::moveForward()
     slowStop();
   }
 }
+
+void TelebotSkypeCmd::moveForwardUntilToldToStop()
+{
+  vel.angular.z = 0;    
+  	vel.linear.x = DEFAULT_FORWARD_SPEED;
+  	publish();
+}
+
 
 void TelebotSkypeCmd::moveBackward()
 {
